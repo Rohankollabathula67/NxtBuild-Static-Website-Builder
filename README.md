@@ -22,22 +22,18 @@ A short and clear description of your project.
 ## 📂 Project Structure
 
 ```text
-project-name/
+Folder/
 │
-├── src/
-├── public/
-├── assets/
-├── components/
-├── pages/
-├── package.json
+├── client/
+├── server/
 └── README.md
 ```
 
-## 📸 Screenshots
+## 📸 Screenshots 
 
 ### Home Page
 
-![Home Page](https://ibb.co/0jckY31Q)
+![Home Page](https://postimg.cc/fVC0xQ3q)
 
 ### Dashboard
 
