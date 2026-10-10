@@ -31,8 +31,13 @@ export const getProject = async (req, res, next) => {
 
 export const updateProject = async (req, res, next) => {
   try {
-    const { title, description } = req.body;
-    const project = await projectService.updateProject(req.params.id, req.user._id, { title, description });
+    const { title, description, generatedCode, generatedFiles } = req.body;
+    const project = await projectService.updateProject(req.params.id, req.user._id, {
+      title,
+      description,
+      generatedCode,
+      generatedFiles,
+    });
     return res.json({ success: true, data: project });
   } catch (error) {
     if (error.statusCode) return res.status(error.statusCode).json({ success: false, message: error.message });

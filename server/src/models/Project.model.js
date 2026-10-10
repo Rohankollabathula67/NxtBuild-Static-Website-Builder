@@ -27,6 +27,11 @@ const projectSchema = new mongoose.Schema({
     default: '',
   },
 
+  generatedFiles: {
+    type: Array,
+    default: [],
+  },
+
   versions: {
     type: Array,
     default: [],
