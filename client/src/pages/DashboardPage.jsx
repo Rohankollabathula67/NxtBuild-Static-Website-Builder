@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContext } from '../context/ToastContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
+import BlueprintLaunchpad from '../components/BlueprintLaunchpad.jsx';
 import { getProjects, createProject, deleteProject } from '../services/projectService.js';
 import '../styles/dashboard.css';
 
@@ -12,6 +13,7 @@ function DashboardPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -33,6 +35,18 @@ function DashboardPage() {
       navigate(`/builder/${project._id}`);
     } catch (err) {
       showToast('Failed to create project.', 'error');
+    }
+  };
+
+  const handleLaunchBlueprint = async (blueprint) => {
+    if (launching) return;
+    setLaunching(true);
+    try {
+      const project = await createProject(blueprint.title);
+      navigate(`/builder/${project._id}`, { state: { initialPrompt: blueprint.prompt } });
+    } catch (err) {
+      showToast('Failed to start this blueprint.', 'error');
+      setLaunching(false);
     }
   };
 
@@ -65,15 +79,19 @@ function DashboardPage() {
     <div className="dashboard">
       <div className="dashboard-header">
         <div className="dashboard-header-left">
-          <h1>My Projects</h1>
+          <h1>Your studio</h1>
           <p className="dashboard-subtitle">
-            {projects.length} project{projects.length !== 1 ? 's' : ''}
+            {projects.length} active creation{projects.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button className="dashboard-new-btn" onClick={handleNewProject}>
           + New Project
         </button>
       </div>
+
+      <BlueprintLaunchpad onLaunch={handleLaunchBlueprint} launching={launching} />
+
+      {projects.length > 0 && <p className="dashboard-section-label">Your creations</p>}
 
       {projects.length > 0 && (
         <div className="dashboard-search-bar">
@@ -95,9 +113,9 @@ function DashboardPage() {
       {projects.length === 0 ? (
         <div className="dashboard-empty">
           <p className="dashboard-empty-icon">⬡</p>
-          <h2 className="dashboard-empty-title">No projects yet</h2>
+          <h2 className="dashboard-empty-title">Your next idea starts above</h2>
           <p className="dashboard-empty-subtitle">
-            Create your first project and start building with AI.
+            Choose a direction or start from a blank project when you already know what you want.
           </p>
           <button className="dashboard-new-btn" onClick={handleNewProject}>
             + Create First Project

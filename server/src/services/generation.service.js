@@ -1,20 +1,28 @@
 import { askGemini } from './gemini.service.js';
 import { getProjectById } from './project.service.js';
 import { buildGenerationPrompt } from '../constants/prompts.js';
-import { parseGenerationResponse } from '../utils/code.utils.js';
+import { getPreviewCode, parseGenerationResponse } from '../utils/code.utils.js';
 
 export const generateCode = async (projectId, userId, userPrompt) => {
   const project = await getProjectById(projectId, userId);
 
   const fullPrompt = buildGenerationPrompt(
     project.messages,
-    project.generatedCode,
+    JSON.stringify(
+      project.generatedFiles?.length
+        ? project.generatedFiles
+        : project.generatedCode
+          ? [{ path: 'preview.html', language: 'html', content: project.generatedCode }]
+          : [],
+      null,
+      2
+    ),
     userPrompt
   );
 
   const aiResponse = await askGemini(fullPrompt);
 
-  const { description, code } = parseGenerationResponse(aiResponse);
+  const { description, code, files } = parseGenerationResponse(aiResponse);
 
   project.messages.push({
     role: 'user',
@@ -28,16 +36,25 @@ export const generateCode = async (projectId, userId, userPrompt) => {
     timestamp: new Date(),
   });
 
-  if (project.generatedCode && code) {
+  if ((project.generatedCode || project.generatedFiles?.length) && (code || files?.length)) {
     project.versions.push({
       code: project.generatedCode,
+      files: project.generatedFiles || [],
       prompt: userPrompt,
       createdAt: new Date(),
     });
   }
 
-  if (code) {
+  if (files?.length) {
+    project.generatedFiles = files;
+    project.generatedCode = getPreviewCode(files) || code || '';
+  } else if (code) {
     project.generatedCode = code;
+    project.generatedFiles = [{
+      path: 'preview.html',
+      language: 'html',
+      content: code,
+    }];
   }
 
   if (project.title === 'Untitled Project' && project.messages.length <= 2) {
@@ -56,6 +73,7 @@ export const generateCode = async (projectId, userId, userPrompt) => {
       timestamp: new Date(),
     },
     generatedCode: project.generatedCode,
+    generatedFiles: project.generatedFiles || [],
     versionIndex: project.versions.length,
   };
 };

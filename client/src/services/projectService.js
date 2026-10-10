@@ -10,8 +10,8 @@ export const getProject = async (id) => {
   return response.data.data;
 };
 
-export const createProject = async () => {
-  const response = await api.post('/projects', {});
+export const createProject = async (title) => {
+  const response = await api.post('/projects', title ? { title } : {});
   return response.data.data;
 };
 
@@ -20,8 +20,8 @@ export const updateProject = async (id, data) => {
   return response.data.data;
 };
 
-export const saveCode = async (id, generatedCode) => {
-  const response = await api.put(`/projects/${id}`, { generatedCode });
+export const saveCode = async (id, generatedCode, generatedFiles = []) => {
+  const response = await api.put(`/projects/${id}`, { generatedCode, generatedFiles });
   return response.data.data;
 };
 

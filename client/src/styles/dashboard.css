@@ -18,6 +18,48 @@
   margin-bottom: 28px;
 }
 
+.dashboard-section-label {
+  margin: 38px 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Intentional entry point: projects begin as a creative direction, not a blank record. */
+.blueprint-launchpad {
+  position: relative;
+  overflow: hidden;
+  padding: 34px;
+  border: 1px solid rgba(129, 140, 248, 0.22);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 92% 4%, rgba(192, 132, 252, 0.17), transparent 30%),
+    radial-gradient(circle at 8% 100%, rgba(59, 130, 246, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(24, 20, 54, 0.96), rgba(10, 9, 24, 0.98));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+}
+
+.blueprint-launchpad-intro { position: relative; z-index: 1; max-width: 560px; }
+.blueprint-kicker { color: var(--accent-light); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+.blueprint-launchpad h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(27px, 3.2vw, 42px); line-height: 1.06; letter-spacing: -0.05em; margin-bottom: 12px; }
+.blueprint-launchpad-intro > p:last-child { color: var(--text-secondary); font-size: 14px; max-width: 510px; }
+
+.blueprint-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 30px; }
+.blueprint-card { min-height: 216px; display: flex; flex-direction: column; align-items: flex-start; padding: 18px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: var(--radius-md); color: var(--text-primary); text-align: left; background: rgba(255, 255, 255, 0.045); backdrop-filter: blur(12px); transition: transform var(--t-base), background var(--t-base), border-color var(--t-base); }
+.blueprint-card:hover:not(:disabled) { transform: translateY(-4px); background: rgba(99, 102, 241, 0.14); border-color: rgba(129, 140, 248, 0.5); }
+.blueprint-card:disabled { cursor: wait; opacity: 0.65; }
+.blueprint-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--accent-light); background: var(--accent-soft); margin-bottom: 15px; }
+.blueprint-label { color: var(--accent-light); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+.blueprint-card strong { font-family: 'Space Grotesk', sans-serif; font-size: 16px; line-height: 1.2; }
+.blueprint-description { margin-top: 8px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.blueprint-action { margin-top: auto; padding-top: 14px; color: var(--text-primary); font-size: 12px; font-weight: 600; }
+.blueprint-action span { color: var(--accent-light); padding-left: 4px; }
+.blueprint-orbit { position: absolute; border: 1px solid rgba(129, 140, 248, 0.13); border-radius: 50%; pointer-events: none; }
+.blueprint-orbit-one { width: 420px; height: 420px; right: -180px; top: -260px; }
+.blueprint-orbit-two { width: 260px; height: 260px; right: -90px; top: -100px; }
+
 .dashboard-header-left h1 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 28px;
@@ -329,4 +371,11 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+
+  .blueprint-launchpad { padding: 24px 18px; }
+  .blueprint-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 440px) {
+  .blueprint-grid { grid-template-columns: 1fr; }
 }

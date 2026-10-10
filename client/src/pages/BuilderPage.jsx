@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContext } from '../context/ToastContext.jsx';
 import ChatMessage from '../components/ChatMessage.jsx';
 import ChatInput from '../components/ChatInput.jsx';
@@ -7,6 +7,7 @@ import CodeEditor from '../components/CodeEditor.jsx';
 import LivePreview from '../components/LivePreview.jsx';
 import { getProject, updateProject, saveCode } from '../services/projectService.js';
 import { generateCode } from '../services/generationService.js';
+import { downloadProject } from '../utils/projectDownload.js';
 import '../styles/builder.css';
 
 const EXAMPLE_PROMPTS = [
@@ -18,14 +19,25 @@ const EXAMPLE_PROMPTS = [
   'A countdown timer for New Year',
 ];
 
+const getPreviewCode = (files, fallbackCode = '') => {
+  const previewFile = files.find((file) => file.path === 'preview.html')
+    || files.find((file) => file.path?.endsWith('index.html'))
+    || files.find((file) => file.language === 'html' || file.path?.endsWith('.html'));
+
+  return previewFile?.content || fallbackCode;
+};
+
 function BuilderPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useContext(ToastContext);
 
   const [project, setProject] = useState(null);
   const [messages, setMessages] = useState([]);
   const [code, setCode] = useState('');
+  const [files, setFiles] = useState([]);
+  const [activeFilePath, setActiveFilePath] = useState('');
   const [activeTab, setActiveTab] = useState('preview');
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -35,15 +47,24 @@ function BuilderPage() {
   const [savingCode, setSavingCode] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const initialPromptSentRef = useRef(false);
 
   // Load project on mount
   useEffect(() => {
     const loadProject = async () => {
       try {
         const data = await getProject(projectId);
+        const projectFiles = data.generatedFiles?.length
+          ? data.generatedFiles
+          : data.generatedCode
+            ? [{ path: 'preview.html', language: 'html', content: data.generatedCode }]
+            : [];
+
         setProject(data);
         setMessages(data.messages || []);
         setCode(data.generatedCode || '');
+        setFiles(projectFiles);
+        setActiveFilePath(projectFiles[0]?.path || '');
         setEditTitle(data.title || 'Untitled Project');
       } catch (err) {
         showToast('Project not found.', 'error');
@@ -71,8 +92,14 @@ function BuilderPage() {
       const result = await generateCode(projectId, prompt);
       setMessages((prev) => [...prev, result.message]);
 
-      if (result.generatedCode) {
-        setCode(result.generatedCode);
+      if (result.generatedFiles?.length || result.generatedCode) {
+        const nextFiles = result.generatedFiles?.length
+          ? result.generatedFiles
+          : [{ path: 'preview.html', language: 'html', content: result.generatedCode }];
+
+        setFiles(nextFiles);
+        setActiveFilePath(nextFiles[0]?.path || '');
+        setCode(result.generatedCode || getPreviewCode(nextFiles));
         setActiveTab('preview');
       }
 
@@ -90,6 +117,14 @@ function BuilderPage() {
     }
   };
 
+  useEffect(() => {
+    const initialPrompt = location.state?.initialPrompt;
+    if (!pageLoading && initialPrompt && !initialPromptSentRef.current) {
+      initialPromptSentRef.current = true;
+      handleSend(initialPrompt);
+    }
+  }, [pageLoading]);
+
   const handleTitleSave = async () => {
     setIsEditingTitle(false);
     if (editTitle.trim() && editTitle !== project?.title) {
@@ -104,10 +139,10 @@ function BuilderPage() {
   };
 
   const handleSaveCode = async () => {
-    if (!code || savingCode) return;
+    if ((!code && files.length === 0) || savingCode) return;
     setSavingCode(true);
     try {
-      await saveCode(projectId, code);
+      await saveCode(projectId, getPreviewCode(files, code), files);
       showToast('Code saved!', 'success');
     } catch {
       showToast('Failed to save code.', 'error');
@@ -117,22 +152,54 @@ function BuilderPage() {
   };
 
   const handleDownload = () => {
-    if (!code) return;
-    const blob = new Blob([code], { type: 'text/html' });
+    const activeFile = files.find((file) => file.path === activeFilePath);
+    const downloadContent = activeFile?.content || code;
+    if (!downloadContent) return;
+
+    const blob = new Blob([downloadContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${project?.title || 'my-app'}.html`;
+    link.download = activeFile?.path?.split('/').pop() || `${project?.title || 'my-app'}.html`;
     link.click();
     URL.revokeObjectURL(url);
-    showToast('Code downloaded!', 'success');
+    showToast(activeFile ? `${activeFile.path} downloaded!` : 'Code downloaded!', 'success');
   };
 
-  const handleRestoreVersion = (versionCode) => {
+  const handleDownloadProject = () => {
+    const projectFiles = files.length
+      ? files
+      : code
+        ? [{ path: 'preview.html', language: 'html', content: code }]
+        : [];
+
+    if (!projectFiles.length) return;
+    downloadProject(projectFiles, project?.title);
+    showToast('Project ZIP downloaded!', 'success');
+  };
+
+  const handleRestoreVersion = (versionCode, versionFiles = []) => {
+    const restoredFiles = versionFiles.length
+      ? versionFiles
+      : versionCode
+        ? [{ path: 'preview.html', language: 'html', content: versionCode }]
+        : [];
+
     setCode(versionCode);
+    setFiles(restoredFiles);
+    setActiveFilePath(restoredFiles[0]?.path || '');
     setActiveTab('preview');
     setShowVersions(false);
     showToast('Version restored. Click Save to persist.', 'success');
+  };
+
+  const handleFileChange = (path, content) => {
+    const nextFiles = files.map((file) => (
+      file.path === path ? { ...file, content } : file
+    ));
+
+    setFiles(nextFiles);
+    setCode(getPreviewCode(nextFiles, code));
   };
 
   const formatDate = (dateStr) => {
@@ -251,7 +318,7 @@ function BuilderPage() {
             </button>
           </div>
           <div className="builder-tabs-right">
-            {activeTab === 'code' && code && (
+            {activeTab === 'code' && (code || files.length > 0) && (
               <button
                 className="builder-action-btn save"
                 onClick={handleSaveCode}
@@ -260,19 +327,31 @@ function BuilderPage() {
                 {savingCode ? 'Saving…' : 'Save'}
               </button>
             )}
-            {code && (
-              <button className="builder-action-btn" onClick={handleDownload}>
-                Download
-              </button>
+            {(code || files.length > 0) && (
+              <>
+                <button className="builder-action-btn" onClick={handleDownload}>
+                  Download File
+                </button>
+                <button className="builder-action-btn" onClick={handleDownloadProject}>
+                  Download Project
+                </button>
+              </>
             )}
           </div>
         </div>
 
         <div className="builder-content">
           {activeTab === 'preview' ? (
-            <LivePreview code={code} />
+            <LivePreview code={code} files={files} />
           ) : (
-            <CodeEditor code={code} onChange={setCode} />
+            <CodeEditor
+              code={code}
+              onChange={setCode}
+              files={files}
+              activeFilePath={activeFilePath}
+              onActiveFileChange={setActiveFilePath}
+              onFileChange={handleFileChange}
+            />
           )}
 
           {/* Version History Panel */}
@@ -299,7 +378,7 @@ function BuilderPage() {
                         <span className="version-date">{formatDate(v.createdAt)}</span>
                         <button
                           className="version-restore-btn"
-                          onClick={() => handleRestoreVersion(v.code)}
+                          onClick={() => handleRestoreVersion(v.code, v.files)}
                         >
                           Restore
                         </button>

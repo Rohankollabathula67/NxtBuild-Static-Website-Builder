@@ -1,4 +1,4 @@
-import Project from '../models/project.model.js'
+import Project from '../models/Project.model.js';
 
 export const getUserProjects = async (userId) => {
   const projects = await Project.find({ userId }).sort({ updatedAt: -1 });
@@ -21,6 +21,7 @@ export const createProject = async (userId, title) => {
     title: title || 'Untitled Project',
     messages: [],
     generatedCode: '',
+    generatedFiles: [],
     versions: [],
   });
   return project;
@@ -36,6 +37,8 @@ export const updateProject = async (projectId, userId, updates) => {
 
   if (updates.title !== undefined) project.title = updates.title;
   if (updates.description !== undefined) project.description = updates.description;
+  if (updates.generatedCode !== undefined) project.generatedCode = updates.generatedCode;
+  if (updates.generatedFiles !== undefined) project.generatedFiles = updates.generatedFiles;
 
   project.updatedAt = new Date();
   await project.save();
