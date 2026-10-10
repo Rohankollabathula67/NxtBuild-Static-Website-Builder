@@ -107,9 +107,9 @@ This project is licensed under the MIT License.
 
 Your Name
 
-GitHub: https://github.com/your-username
+GitHub: https://github.com/Rohankollabathula67
 
-LinkedIn: https://linkedin.com/in/your-profile
+LinkedIn: https://linkedin.com/in/rohankollabathula1306
 
 ---
 
